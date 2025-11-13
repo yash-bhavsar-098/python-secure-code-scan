@@ -1,0 +1,32 @@
+import subprocess
+import os
+import sys
+
+def scan_code(project_path):
+    reports_dir = os.path.join(os.getcwd(), 'reports')
+    if not os.path.exists(reports_dir):
+        os.makedirs(reports_dir)
+
+    report_file_name = os.path.join(reports_dir, "vulnerability_scan_report.txt")
+    
+    with open(report_file_name, "w") as report_file:
+        python_dirs = []
+
+        for root, dirs, files in os.walk(project_path):
+            if any(file.endswith(".py") for file in files):
+                python_dirs.append(root)
+
+        for py_dir in python_dirs:
+            try:
+                command = [sys.executable, "-m", "bandit", "-r", py_dir, "-ll", "-f", "txt"]
+                result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+  
+                report_file.write(f"Bandit scan for directory: {py_dir}\n")
+                report_file.write(result.stdout)
+                report_file.write(result.stderr)
+                report_file.write("\n\n")
+            except Exception as e:
+                report_file.write(f"Error running Bandit on {py_dir}: {e}\n")
+
+    print(f"Vulnerability scan report written to {report_file_name}")
+    return report_file_name
